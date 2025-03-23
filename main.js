@@ -60,8 +60,228 @@ require([
     const Communeslayer = new FeatureLayer({
         url: "https://services5.arcgis.com/QSH6YPknm65jcM1C/arcgis/rest/services/communes2/FeatureServer/0",
         popupTemplate: {
-            title: "Nom de la commune: {COMMUNE_AR}"// Titre du pop-up
-            
+            title: "Nom de la commune: {COMMUNE_AR}"
+
+        }
+
+
+    });
+
+    
+    let prefectureRenderer;
+    let communeRenderer;
+
+    // Récupérer les valeurs uniques pour les préfectures
+    Communeslayer.when(function () {
+        const query = Communeslayer.createQuery();
+        query.outFields = ["PREFECTURE"]; // Champ 
+        query.returnDistinctValues = true; // Récupérer uniquement les valeurs distinctes
+
+        Communeslayer.queryFeatures(query).then(function (results) {
+            const prefectures = results.features.map(function (feature) {
+                return feature.attributes.PREFECTURE;
+            });
+
+            // Créer le renderer dynamique par préfecture
+            prefectureRenderer = createPrefectureRenderer(prefectures);
+
+            // Appliquer le renderer par défaut (par préfecture)
+            Communeslayer.renderer = prefectureRenderer;
+        });
+    });
+
+    // Récupérer les valeurs uniques pour les communes/arrondissements
+    Communeslayer.when(function () {
+        const query = Communeslayer.createQuery();
+        query.outFields = ["COMMUNE_AR"];
+        query.returnDistinctValues = true;
+
+        Communeslayer.queryFeatures(query).then(function (results) {
+            const communes = results.features.map(function (feature) {
+                return feature.attributes.COMMUNE_AR;
+            });
+
+            // Créer le renderer dynamique par commune/arrondissement
+            communeRenderer = createCommuneRenderer(communes);
+        });
+    });
+
+    // Fonction pour créer un renderer dynamique par préfecture
+    function createPrefectureRenderer(prefectures) {
+        const colors = [
+            [255, 0, 0, 0.5],
+            [0, 255, 0, 0.5],
+            [0, 0, 255, 0.5],
+            [255, 255, 0, 0.5],
+            [255, 0, 255, 0.5],
+            [0, 255, 255, 0.5],
+            [128, 0, 128, 0.5],
+            [255, 165, 0, 0.5],
+        ];
+
+        const uniqueValueInfos = prefectures.map(function (prefecture, index) {
+            return {
+                value: prefecture,
+                symbol: {
+                    type: "simple-fill",
+                    color: colors[index % colors.length],
+                    outline: {
+                        color: [0, 0, 0],
+                        width: 1
+                    }
+                }
+            };
+        });
+
+        return {
+            type: "unique-value",
+            field: "PREFECTURE",
+            uniqueValueInfos: uniqueValueInfos
+        };
+    }
+
+    // Fonction pour créer un renderer dynamique par commune/arrondissement
+    function createCommuneRenderer(communes) {
+        const colors = [
+            [255, 0, 0, 0.5],
+            [0, 255, 0, 0.5],
+            [0, 0, 255, 0.5],
+            [255, 255, 0, 0.5],
+            [255, 0, 255, 0.5],
+            [0, 255, 255, 0.5],
+            [128, 0, 128, 0.5],
+            [255, 165, 0, 0.5],
+        ];
+
+        const uniqueValueInfos = communes.map(function (commune, index) {
+            return {
+                value: commune, // Valeur de la commune/arrondissement
+                symbol: {
+                    type: "simple-fill",
+                    color: colors[index % colors.length],
+                    outline: {
+                        color: [0, 0, 0],
+                        width: 1
+                    }
+                }
+            };
+        });
+
+        return {
+            type: "unique-value", // Symbologie unique par valeur
+            field: "COMMUNE_AR", // Champ pour la commune/arrondissement
+            uniqueValueInfos: uniqueValueInfos // Liste des communes avec leurs symboles
+        };
+    }
+
+    // Renderer par surface (cinq classes)
+    const surfaceRenderer = {
+        type: "class-breaks",
+        field: "Shape_Area", // Champ utilisé pour la symbologie
+        defaultSymbol: { // Symbole par défaut pour les valeurs nulles ou vides
+            type: "simple-fill",
+            color: [150, 150, 150, 0.5], // Gris
+            outline: {
+                color: [100, 100, 100],
+                width: 1
+            }
+        },
+        classBreakInfos: [
+            // Classe 1 : 600K - 40M m²
+            {
+                minValue: 600000,
+                maxValue: 40000000,
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 255, 204, 0.5],
+                    outline: {
+                        color: [255, 255, 204],
+                        width: 1
+                    }
+                },
+                label: "600K - 40M m²"
+            },
+            // Classe 2 : 40M - 80M m²
+            {
+                minValue: 40000000,
+                maxValue: 80000000,
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 204, 153, 0.5],
+                    outline: {
+                        color: [255, 204, 153],
+                        width: 1
+                    }
+                },
+                label: "40M - 80M m²"
+            },
+            // Classe 3 : 80M - 120M m²
+            {
+                minValue: 80000000,
+                maxValue: 120000000,
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 153, 102, 0.5],
+                    outline: {
+                        color: [255, 153, 102],
+                        width: 1
+                    }
+                },
+                label: "80M - 120M m²"
+            },
+            // Classe 4 : 120M - 160M m²
+            {
+                minValue: 120000000,
+                maxValue: 160000000,
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 102, 51, 0.5],
+                    outline: {
+                        color: [255, 102, 51],
+                        width: 1
+                    }
+                },
+                label: "120M - 160M m²"
+            },
+            // Classe 5 : 160M - 194M m²
+            {
+                minValue: 160000000,
+                maxValue: 194000000,
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 51, 0, 0.5],
+                    outline: {
+                        color: [255, 51, 0],
+                        width: 1
+                    }
+                },
+                label: "160M - 194M m²"
+            }
+        ]
+    };
+
+    // Appliquer le renderer par défaut (optionnel)
+    Communeslayer.renderer = surfaceRenderer;
+
+    // Gérer le changement de symbologie
+    document.getElementById("symbologySelector").addEventListener("change", function (event) {
+        const selectedValue = event.target.value;
+        switch (selectedValue) {
+            case "prefecture":
+                console.log("Application du renderer par préfecture");
+                Communeslayer.renderer = prefectureRenderer;
+                break;
+            case "commune":
+                console.log("Application du renderer par commune/arrondissement");
+                Communeslayer.renderer = communeRenderer;
+                break;
+            case "surface":
+                console.log("Application du renderer par surface");
+                Communeslayer.renderer = surfaceRenderer;
+                break;
+            default:
+                console.log("Aucun renderer sélectionné");
+                break;
         }
     });
 
@@ -79,7 +299,7 @@ require([
         url: "https://services5.arcgis.com/QSH6YPknm65jcM1C/arcgis/rest/services/Voiriecasa2/FeatureServer/0",
         popupTemplate: {
             title: "fenêtres contextuelles des voiries",
-            content: `Route: {NOM}<br>Longueur: {LENGTH} m` // Utilisez <br> pour un saut de ligne
+            content: `Route: {NOM}<br>Longueur: {LENGTH} m`
         }
     });
 
@@ -90,10 +310,10 @@ require([
             type: "simple",
             symbol: {
                 type: "simple-marker",
-                color: [0, 255, 0], // vert
+                color: [0, 255, 0],
                 size: "8px",
                 outline: {
-                    color: [255, 255, 255], // Blanc
+                    color: [255, 255, 255],
                     width: "1px"
                 }
             }
@@ -111,11 +331,11 @@ require([
             type: "simple",
             symbol: {
                 type: "simple-marker",
-                style: "square", // Carré
-                color: [0, 0, 255], // Bleu
+                style: "square",
+                color: [0, 0, 255],
                 size: "8px",
                 outline: {
-                    color: [255, 255, 255], // Blanc
+                    color: [255, 255, 255],
                     width: "1px"
                 }
             }
