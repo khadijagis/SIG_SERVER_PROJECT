@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project</title>
+    <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.26/"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+    
+
+    <div id="rightPanel">
+        <div id="filtersContainer">
+            <select id="symbologySelector">
+                <option value="prefecture">Par préfecture</option>
+                <option value="commune">Par commune/arrondissement</option>
+                <option value="surface">Par surface</option>
+            </select>
+            <select id="hotelCategoryFilter">
+                <option value="">Tous les hôtels</option>
+            </select>
+            <select id="storeTypeFilter">
+                <option value="">Toutes les grandes surfaces</option>
+            </select>
+        </div>
+        <div id="basemapGalleryContainer"></div>
+    </div>
+    
+</body>
+</html>

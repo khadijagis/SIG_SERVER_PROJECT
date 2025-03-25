@@ -1,0 +1,82 @@
+html,
+body,
+#viewDiv {
+padding: 0;
+margin: 0;
+height: 100%;
+width: 100%;
+}
+
+
+#controlPanel {
+  position: absolute;
+  top: 15px;  /* Réduit l'espace depuis le haut */
+  left: 15px;
+  z-index: 100;
+  background: rgba(226, 229, 217, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+}
+
+
+
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.control-group {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    
+}
+
+.control-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.control-group h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+}
+
+
+/* Nouveau CSS */
+#rightPanel {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#filtersContainer {
+  background: rgba(226, 229, 217, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+}
+
+#basemapGalleryContainer {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  max-height: 50vh; /* Hauteur maximale à 50% de la hauteur d'écran */
+  overflow-y: auto; /* Défilement vertical automatique */
+  min-width: 250px; /* Largeur minimale pour un bon affichage */
+}
+
