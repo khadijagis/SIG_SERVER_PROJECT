@@ -1,20 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project</title>
-    <link rel="stylesheet" href="style.css"/>
+    <title>Geoportail casablanca</title>
+    <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css">
     <script src="https://js.arcgis.com/4.26/"></script>
     <script src="main.js"></script>
 </head>
+
 <body>
     <div id="viewDiv"></div>
-    <select id="symbologySelector">
-        <option value="prefecture">Par préfecture</option>
-        <option value="commune">Par commune/arrondissement</option>
-        <option value="surface">Par surface</option>
-    </select>
+
+    <div id="controlPanel">
+        <div class="control-group">
+            <h3>Visualisation des Communes</h3>
+            <select id="communesSymbology">
+                <option value="prefecture">Par préfecture</option>
+                <option value="commune">Par commune/arrondissement</option>
+                <option value="surface">Par surface</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <h3>Visualisation de la Population</h3>
+            <select id="populationSymbology">
+                <option value="pop2004">Population 2004 (3K-324K)</option>
+                <option value="pop1994">Population 1994 (4K-254K)</option>
+                <option value="comparison">Comparaison 1994/2004</option>
+            </select>
+        </div>
+    </div>
 </body>
+
 </html>

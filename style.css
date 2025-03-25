@@ -6,11 +6,48 @@ margin: 0;
 height: 100%;
 width: 100%;
 }
-#symbologySelector {
+
+
+#controlPanel {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
+    top: 190px;
+    left: 15px;
+    z-index: 100;
+    background: rgba(226, 229, 217, 0.9);
     padding: 10px;
-    font-size: 16px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    max-width: 300px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.control-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.control-group h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+}
+
+select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+}
+
+#viewDiv {
+    height: 100%;
+    width: 100%;
 }

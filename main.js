@@ -8,9 +8,14 @@ require([
     "esri/PopupTemplate",
     "esri/widgets/Legend",
     "esri/widgets/DistanceMeasurement2D",
-    "esri/widgets/Search"
+    "esri/widgets/Search",
+    "esri/renderers/ClassBreaksRenderer",
+    "esri/smartMapping/statistics/classBreaks"
 
-], function (esriConfig, Map, MapView, BasemapToggle, BasemapGallery, FeatureLayer, PopupTemplate, Legend, DistanceMeasurement2D, Search) {
+], function (esriConfig, Map, MapView, BasemapToggle, BasemapGallery, FeatureLayer, PopupTemplate, Legend, DistanceMeasurement2D, Search, ClassBreaksRenderer, classBreaks) {
+
+    let pop2004Renderer, pop1994Renderer, popComparisonRenderer;
+
 
     esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurNiAQH-39qxj5nbCUefBlq2lNWDAXtMnUmOPWFFazKSRLrWxAk91f4KEwaMq6jsecbqgep37gFrxm-bw4pnLqjoS6cqdNHkVjSKEReZm6t71-_VRCMfTp4-lyb-O8ag6iankvWPnnUGsDLMPQ9YCDK_3_G7ALCy9PAHE3TnE3T5x6YPX5iwypPrcAUicHFVD9JYhxkXZ3ce5FXhjiFzK8Kv-iaHz3XZ42ndKMDOo66ccAT1_XqOdHyna";
 
@@ -56,6 +61,18 @@ require([
         view: view
     });
     view.ui.add(search, "top-left");
+
+    // Fonction utilitaire pour créer des symboles
+    function createFillSymbol(color) {
+        return {
+            type: "simple-fill",
+            color: [...color, 0.7],
+            outline: {
+                color: [110, 110, 110],
+                width: 0.7
+            }
+        };
+    }
     // Couche Communes
     const Communeslayer = new FeatureLayer({
         url: "https://services5.arcgis.com/QSH6YPknm65jcM1C/arcgis/rest/services/communes2/FeatureServer/0",
@@ -67,11 +84,12 @@ require([
 
     });
 
-    
+
     let prefectureRenderer;
     let communeRenderer;
 
     // Récupérer les valeurs uniques pour les préfectures
+    /*
     Communeslayer.when(function () {
         const query = Communeslayer.createQuery();
         query.outFields = ["PREFECTURE"]; // Champ 
@@ -89,8 +107,36 @@ require([
             Communeslayer.renderer = prefectureRenderer;
         });
     });
+    */
 
     // Récupérer les valeurs uniques pour les communes/arrondissements
+
+    Communeslayer.when(function () {
+        // Récupérer les valeurs uniques pour les préfectures
+        const queryPref = Communeslayer.createQuery();
+        queryPref.outFields = ["PREFECTURE"];
+        queryPref.returnDistinctValues = true;
+        
+        Communeslayer.queryFeatures(queryPref).then(function (results) {
+            const prefectures = results.features.map(function (feature) {
+                return feature.attributes.PREFECTURE;
+            });
+            prefectureRenderer = createPrefectureRenderer(prefectures);
+        });
+    
+        // Récupérer les valeurs uniques pour les communes
+        const queryComm = Communeslayer.createQuery();
+        queryComm.outFields = ["COMMUNE_AR"];
+        queryComm.returnDistinctValues = true;
+    
+        Communeslayer.queryFeatures(queryComm).then(function (results) {
+            const communes = results.features.map(function (feature) {
+                return feature.attributes.COMMUNE_AR;
+            });
+            communeRenderer = createCommuneRenderer(communes);
+        });
+    });
+    
     Communeslayer.when(function () {
         const query = Communeslayer.createQuery();
         query.outFields = ["COMMUNE_AR"];
@@ -259,12 +305,19 @@ require([
             }
         ]
     };
+    const populationColors = [
+        [255, 255, 178], // Jaune très clair
+        [254, 204, 92],  // Jaune
+        [253, 141, 60],  // Orange
+        [240, 59, 32],   // Rouge-orange
+        [189, 0, 38]     // Rouge foncé
+    ];
 
     // Appliquer le renderer par défaut (optionnel)
-    Communeslayer.renderer = surfaceRenderer;
+    //Communeslayer.renderer = surfaceRenderer;
 
     // Gérer le changement de symbologie
-    document.getElementById("symbologySelector").addEventListener("change", function (event) {
+    document.getElementById("communesSymbology").addEventListener("change", function (event) {
         const selectedValue = event.target.value;
         switch (selectedValue) {
             case "prefecture":
@@ -279,20 +332,144 @@ require([
                 console.log("Application du renderer par surface");
                 Communeslayer.renderer = surfaceRenderer;
                 break;
-            default:
-                console.log("Aucun renderer sélectionné");
-                break;
+
         }
     });
 
+
+
     // Couche Population
-    const populationlayer = new FeatureLayer({
+    const populationLayer = new FeatureLayer({
         url: "https://services5.arcgis.com/QSH6YPknm65jcM1C/arcgis/rest/services/casa_population1/FeatureServer/0",
+        visible: true, // Visible par défaut
         popupTemplate: {
-            title: "Population",
-            content: "Densité: {densite200} hab/km²"
+            title: "Population - {COMMUNE_AR}",
+            content: [{
+                type: "fields",
+                fieldInfos: [
+                    { fieldName: "TOTAL1994", label: "Population 1994", format: { digitSeparator: true } },
+                    { fieldName: "TOTAL2004", label: "Population 2004", format: { digitSeparator: true } },
+                    { fieldName: "densite200", label: "Densité (hab/km²)", format: { digitSeparator: true } }
+                ]
+            }]
         }
     });
+    
+
+    
+
+
+
+
+// Fonction pour créer un renderer par classe de population
+function createPopulationRenderer(field, title, minValue, maxValue) {
+    const range = maxValue - minValue;
+    const classSize = range / 5;
+    
+    return {
+        type: "class-breaks",
+        field: field,
+        legendOptions: { title: title },
+        classBreakInfos: [
+            createClassBreak(minValue, minValue + classSize, populationColors[0]),
+            createClassBreak(minValue + classSize, minValue + 2 * classSize, populationColors[1]),
+            createClassBreak(minValue + 2 * classSize, minValue + 3 * classSize, populationColors[2]),
+            createClassBreak(minValue + 3 * classSize, minValue + 4 * classSize, populationColors[3]),
+            createClassBreak(minValue + 4 * classSize, maxValue, populationColors[4])
+        ]
+    };
+}
+
+// Fonction helper pour créer une classe
+function createClassBreak(min, max, color) {
+    return {
+        minValue: min,
+        maxValue: max,
+        symbol: {
+            type: "simple-fill",
+            color: [...color, 0.7],
+            outline: { color: [110, 110, 110], width: 0.7 }
+        },
+        label: `${Math.round(min/1000)}K - ${Math.round(max/1000)}K`
+    };
+}
+
+// Fonction pour le renderer de comparaison avec diagrammes
+function createComparisonRenderer() {
+    return {
+        type: "class-breaks",
+        field: "TOTAL2004",
+        legendOptions: { title: "Comparaison 1994/2004" },
+        classBreakInfos: [
+            createClassBreak(0, 1, [255, 255, 255]) // Classe factice pour le diagramme
+        ],
+        visualVariables: [{
+            type: "size",
+            field: "TOTAL1994",
+            minDataValue: 3000,
+            maxDataValue: 325000,
+            minSize: 5,
+            maxSize: 30,
+            legendOptions: { title: "Population 1994" }
+        }, {
+            type: "color",
+            field: "TOTAL2004",
+            stops: [
+                { value: 3000, color: [255, 255, 204] },
+                { value: 325000, color: [255, 51, 0] }
+            ],
+            legendOptions: { title: "Population 2004" }
+        }]
+    };
+}
+
+// Initialisation des renderers
+view.when(() => {
+    populationLayer.when(() => {
+        const query = populationLayer.createQuery();
+        query.outStatistics = [
+            { statisticType: "min", onStatisticField: "TOTAL1994", outStatisticFieldName: "min1994" },
+            { statisticType: "max", onStatisticField: "TOTAL1994", outStatisticFieldName: "max1994" },
+            { statisticType: "min", onStatisticField: "TOTAL2004", outStatisticFieldName: "min2004" },
+            { statisticType: "max", onStatisticField: "TOTAL2004", outStatisticFieldName: "max2004" }
+        ];
+
+        populationLayer.queryFeatures(query).then(results => {
+            const stats = results.features[0].attributes;
+            const min1994 = stats.min1994 || 3000;
+            const max1994 = stats.max1994 || 250000;
+            const min2004 = stats.min2004 || 3000;
+            const max2004 = stats.max2004 || 320000;
+
+            pop1994Renderer = createPopulationRenderer("TOTAL1994", "Population 1994", min1994, max1994);
+            pop2004Renderer = createPopulationRenderer("TOTAL2004", "Population 2004", min2004, max2004);
+            popComparisonRenderer = createComparisonRenderer();
+            
+            populationLayer.renderer = pop2004Renderer;
+            populationLayer.visible = true;
+        });
+    });
+});
+
+// Gestion du changement de mode de visualisation
+document.getElementById("populationSymbology").addEventListener("change", function(e) {
+    Communeslayer.visible = false;
+    populationLayer.visible = true;
+    
+    switch(e.target.value) {
+        case "pop1994":
+            populationLayer.renderer = pop1994Renderer;
+            break;
+        case "pop2004":
+            populationLayer.renderer = pop2004Renderer;
+            break;
+        case "comparison":
+            populationLayer.renderer = popComparisonRenderer;
+            break;
+    }
+    
+    view.goTo(view.extent).catch(() => {});
+});
 
     // Couche Voirie
     const Voirielayer = new FeatureLayer({
@@ -345,7 +522,50 @@ require([
             content: "Adresse: {Adresse}"
         }
     });
+    // Gestion des événements
+    document.getElementById("communesSymbology")?.addEventListener("change", function (e) {
+        // Masquer la couche population
+        populationLayer.visible = false;
+
+        // Afficher la couche communes
+        Communeslayer.visible = true;
+
+        switch (e.target.value) {
+            case "prefecture":
+                Communeslayer.renderer = prefectureRenderer;
+                break;
+            case "commune":
+                Communeslayer.renderer = communeRenderer;
+                break;
+            case "surface":
+                Communeslayer.renderer = surfaceRenderer;
+                break;
+        }
+    });
+
+    document.getElementById("populationSymbology")?.addEventListener("change", function (e) {
+        // Masquer la couche communes
+        Communeslayer.visible = false;
+
+        // Afficher la couche population
+        populationLayer.visible = true;
+
+        switch (e.target.value) {
+            case "pop2004":
+                populationLayer.renderer = pop2004Renderer;
+                break;
+            case "pop1994":
+                populationLayer.renderer = pop1994Renderer;
+                break;
+            case "comparison":
+                populationLayer.renderer = popComparisonRenderer;
+                break;
+        }
+    });
+
 
     // Ajouter toutes les couches à la carte
-    map.addMany([Communeslayer, populationlayer, Voirielayer, Hotellayer, GrandeSurfacelayer]);
+    map.addMany([populationLayer, Communeslayer, Voirielayer, Hotellayer, GrandeSurfacelayer]);
+
+
 });
